@@ -1,12 +1,13 @@
 from rest_framework.routers import DefaultRouter
 from rest_framework_nested.routers import NestedDefaultRouter
-from .views import BatchViewSet, BuyerViewSet, CartItemViewSet, OrderViewSet, ProductViewSet, CartViewSet
+from .views import BatchViewSet, BuyerViewSet, CartItemViewSet, CityViewSet, OrderViewSet, ProductViewSet, CartViewSet
 
 router = DefaultRouter()
 router.register('batches', BatchViewSet)
 router.register('cart', CartViewSet)
 router.register('orders', OrderViewSet, basename='order')
 router.register('buyers', BuyerViewSet)
+router.register('cities', CityViewSet)
 
 batch_router = NestedDefaultRouter(router, 'batches', lookup='batch')
 batch_router.register('products', ProductViewSet, basename='products')

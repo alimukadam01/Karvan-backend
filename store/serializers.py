@@ -36,7 +36,7 @@ class BuyerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Buyer
-        fields = ['id', 'first_name', 'last_name', 'email', 'phone', 'addresses'] 
+        fields = ['id', 'first_name', 'last_name', 'email', 'phone', 'addresses']
 
 
 class SimpleBuyerSerializer(serializers.ModelSerializer):
@@ -262,6 +262,7 @@ class OrderFinalizeSerializer(serializers.Serializer):
         order.status = "OK"
         order.address = address
         order.payment.status = "S"
+        order.payment.save()
         order.save()
 
         return order

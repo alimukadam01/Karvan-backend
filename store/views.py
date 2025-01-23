@@ -15,19 +15,25 @@ from .serializers import (
     BatchSerializer,
     BuyerSerializer,
     CartItemSerializer, CartItemUpdateSerializer, CartSerializer,
+    CitySerializer,
     FetchBuyerSerializer,
     OrderFinalizeSerializer,
     OrderInitSerializer,
     OrderSerializer,
     ProductDetailSerializer, ProductListSerializer
 )
-from .models import Batch, Buyer, Cart, CartItem, Order, Product
+from .models import Batch, Buyer, Cart, CartItem, City, Order, Product
 
 # Create your views here.
 
 class BatchViewSet(ReadOnlyModelViewSet):
     queryset = Batch.objects.all()
     serializer_class = BatchSerializer
+
+
+class CityViewSet(ReadOnlyModelViewSet):
+    queryset = City.objects.all()
+    serializer_class = CitySerializer
 
 
 class BuyerViewSet(

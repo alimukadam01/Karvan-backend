@@ -16,7 +16,7 @@ class CitySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = City
-        fields = ['name', 'shipping_charges']
+        fields = ['id', 'name', 'shipping_charges']
 
 
 class AddressSerializer(serializers.ModelSerializer):
@@ -171,26 +171,35 @@ class OrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = [
             'id', 'buyer', 'created_at', 'status',
-            'payment', 'items', 'address'
+            'payment', 'items', 'address', 'notes'
         ]
 
 
 class OrderInitSerializer(serializers.Serializer):
 
-    def save(self, **kwargs):
+    def save(self, cart_items, **kwargs):
         order = Order.objects.create(status='N')
-        cart_items = CartItem.objects.filter(cart_id = self.context['cart_id'])
-        print(f"Length of cart_items: {len(cart_items)}")
 
-        order_items = [
-            OrderItem(
+        order_items = []
+        if cart_items:
+            order_items = [
+                OrderItem(
+                    order_id = order.id,
+                    product_id = item.product.id,
+                    quantity = item.quantity,
+                    size = item.size
+                )
+            for item in cart_items]
+            OrderItem.objects.bulk_create(order_items)
+
+        else:
+            order_items.append(OrderItem.objects.create(
                 order_id = order.id,
-                product_id = item.product.id,
-                quantity = item.quantity,
-                size = item.size
-            )
-        for item in cart_items]
-        OrderItem.objects.bulk_create(order_items)
+                product_id = self.context["product_id"],
+                quantity = self.validated_data["quantity"],
+                size = self.validated_data["size"]
+            ))
+
 
         amount=0.0
         for item in order_items:
@@ -200,12 +209,35 @@ class OrderInitSerializer(serializers.Serializer):
             amount = amount,
             status = "P"
         )
+
         order.payment = payment
+        order.status = "N"
         order.save()
+
+        return order
+
+
+class CartOrderCreateSerializer(OrderInitSerializer):
+
+    def save(self, **kwargs):
+
+        cart_items = CartItem.objects.filter(cart_id = self.context['cart_id'])
+        if not cart_items:
+            raise Exception("cart_items are needed for this operation")
+
+        order = super().save(cart_items, **kwargs)
 
         Cart.objects.get(id=self.context['cart_id']).delete()
         return order
 
+
+class BuyOrderCreateSerializer(OrderInitSerializer):
+
+    size = serializers.CharField(max_length = 10)
+    quantity = serializers.IntegerField()
+
+    def save(self, **kwargs):
+        return super().save([], **kwargs)
 
 class OrderFinalizeSerializer(serializers.Serializer):
 
@@ -216,9 +248,10 @@ class OrderFinalizeSerializer(serializers.Serializer):
 
     address = serializers.CharField(max_length=256)
     apt_suite = serializers.CharField(max_length=256)
-    city = serializers.CharField(max_length=256)
+    city_id = serializers.IntegerField()
     alt_phone = serializers.CharField(max_length=256)
     postal_code = serializers.CharField(max_length=256)
+    notes = serializers.CharField(required=False)
 
 
     def save(self, **kwargs):
@@ -233,14 +266,14 @@ class OrderFinalizeSerializer(serializers.Serializer):
         address_data = {
             "address": self.validated_data['address'],
             "apt_suite": self.validated_data['apt_suite'],
-            "city_id": 1,
+            "city_id": self.validated_data['city_id'],
             "phone": self.validated_data['phone'],
             "postal_code": self.validated_data['postal_code']
         }
 
         try:
             buyer = Buyer.objects.get(email=buyer_data["email"])
-        
+
         except Buyer.DoesNotExist:
             buyer = Buyer.objects.create(**buyer_data)
 
@@ -249,11 +282,12 @@ class OrderFinalizeSerializer(serializers.Serializer):
                 buyer_id = buyer.id,
             )
         except Address.DoesNotExist:
-            address = Address.objects.create(buyer_id = buyer.id, city_id = 1)
+            address = Address.objects.create(buyer_id = buyer.id)
 
         address.address = address_data["address"]
         address.apt_suite = address_data["apt_suite"]
         address.phone = address_data["phone"]
+        address.city = City.objects.get(id=address_data["city_id"])
         address.postal_code = address_data["postal_code"]
         address.save()
 
@@ -262,6 +296,8 @@ class OrderFinalizeSerializer(serializers.Serializer):
         order.status = "OK"
         order.address = address
         order.payment.status = "S"
+        if self.validated_data.get("notes"):
+            order.notes = self.validated_data["notes"]
         order.payment.save()
         order.save()
 

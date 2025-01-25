@@ -13,8 +13,10 @@ from rest_framework.permissions import IsAdminUser
 
 from .serializers import (
     BatchSerializer,
+    BuyOrderCreateSerializer,
     BuyerSerializer,
-    CartItemSerializer, CartItemUpdateSerializer, CartSerializer,
+    CartItemSerializer, CartItemUpdateSerializer,
+    CartOrderCreateSerializer, CartSerializer,
     CitySerializer,
     FetchBuyerSerializer,
     OrderFinalizeSerializer,
@@ -80,15 +82,23 @@ class ProductViewSet(ReadOnlyModelViewSet):
             return ProductListSerializer
         elif action == "add_to_cart":
             return CartItemSerializer
+        elif action == "buy":
+            return BuyOrderCreateSerializer
+
         return ProductDetailSerializer
 
     @action(methods=['POST'], detail=True)
     def add_to_cart(self, request, batch_pk=None, pk=None):
         if self.request.method == 'POST':
-            if "cart_id" in request.data.keys():
-                cart = Cart.objects.get(id = request.data['cart_id'])
-            else:
-                cart = Cart.objects.create()
+
+            try:
+                cart = Cart.objects.get(id = request.data['id'])
+            except Cart.DoesNotExist:
+                return Response({
+                    "detail": {
+                        "Bad Request"
+                    }
+                }, status = status.HTTP_400_BAD_REQUEST)
 
             try:
 
@@ -100,7 +110,8 @@ class ProductViewSet(ReadOnlyModelViewSet):
                     }
                 )
                 serializer.is_valid()
-                serializer.save()
+                order = serializer.save()
+                serializer = OrderSerializer(order)
 
                 return Response({
                     "cart_id": cart.id
@@ -112,26 +123,45 @@ class ProductViewSet(ReadOnlyModelViewSet):
                     'detail': 'Internal Server Error.'
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    @action(methods=['POST'], detail=True)
+    def buy(self, request, batch_pk=None, pk=None):
+
+        serializer = BuyOrderCreateSerializer(data = request.data, context={
+            "product_id": self.kwargs['pk']
+        })
+
+        try:
+            serializer.is_valid()
+            order = serializer.save()
+            serializer = OrderSerializer(order)
+
+        except Exception as error:
+            print(error)
+            return Response({
+                "detail": "Internal Server Error"
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response(serializer.data, status = status.HTTP_200_OK)
+
+
 
 class CartViewSet(ModelViewSet):
     queryset = Cart.objects.all()
 
     def get_serializer_class(self):
         if self.action == 'initiate_order':
-            return OrderInitSerializer
+            return CartOrderCreateSerializer
 
         return CartSerializer
 
     @action(methods=['POST'], detail=True)
     def initiate_order(self, request, pk=None):
 
-        serializer = OrderInitSerializer(
+        serializer = CartOrderCreateSerializer(
             data={}, context = {
                 "cart_id": self.kwargs['pk']
             }
         )
-
-        print(self.kwargs['pk'])
 
         try:
             serializer.is_valid()

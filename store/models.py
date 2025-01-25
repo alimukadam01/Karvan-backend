@@ -154,6 +154,7 @@ class Order(models.Model):
         Address, on_delete=models.DO_NOTHING, 
         related_name='orders', null=True, blank=True
     )
+    notes = models.TextField(null=True, blank=True)
 
 
 class OrderItem(models.Model):

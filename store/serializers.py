@@ -251,7 +251,7 @@ class OrderFinalizeSerializer(serializers.Serializer):
     city_id = serializers.IntegerField()
     alt_phone = serializers.CharField(max_length=256)
     postal_code = serializers.CharField(max_length=256)
-    notes = serializers.CharField(required=False)
+    notes = serializers.CharField(required=False, allow_blank=True)
 
 
     def save(self, **kwargs):
@@ -266,8 +266,8 @@ class OrderFinalizeSerializer(serializers.Serializer):
         address_data = {
             "address": self.validated_data['address'],
             "apt_suite": self.validated_data['apt_suite'],
-            "city_id": self.validated_data['city_id'],
-            "phone": self.validated_data['phone'],
+            "city": City.objects.get(id=self.validated_data["city_id"]),
+            "phone": self.validated_data['alt_phone'],
             "postal_code": self.validated_data['postal_code']
         }
 
@@ -282,12 +282,12 @@ class OrderFinalizeSerializer(serializers.Serializer):
                 buyer_id = buyer.id,
             )
         except Address.DoesNotExist:
-            address = Address.objects.create(buyer_id = buyer.id)
+            address = Address.objects.create(buyer_id = buyer.id, city=address_data["city"])
 
         address.address = address_data["address"]
         address.apt_suite = address_data["apt_suite"]
+        address.city = address_data["city"]
         address.phone = address_data["phone"]
-        address.city = City.objects.get(id=address_data["city_id"])
         address.postal_code = address_data["postal_code"]
         address.save()
 

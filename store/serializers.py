@@ -3,7 +3,7 @@ from .models import (
     Batch, Product,
     Buyer, Address, City,
     Cart, CartItem,
-    Order, OrderItem, Payment,
+    Order, OrderItem, Payment, ProductReview,
 )
 
 class ImageSerializer(serializers.Serializer):
@@ -30,6 +30,7 @@ class AddressSerializer(serializers.ModelSerializer):
             'phone', 'postal_code', 'city'
         ]
 
+
 class BuyerSerializer(serializers.ModelSerializer):
 
     addresses = AddressSerializer(read_only=True, many=True)
@@ -48,6 +49,13 @@ class SimpleBuyerSerializer(serializers.ModelSerializer):
         fields = ['id', 'email', 'addresses']
 
 
+class BasicBuyerSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Buyer
+        fields = ['id', 'email', 'first_name', 'last_name']
+
+
 class FetchBuyerSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
@@ -59,6 +67,15 @@ class BatchSerializer(serializers.ModelSerializer):
     class Meta:
         model = Batch
         fields = ['id', 'title', 'desc', 'images']
+
+
+class ProductReviewSerializer(serializers.ModelSerializer):
+
+    buyer = BasicBuyerSerializer(read_only = True)
+
+    class Meta: 
+        model = ProductReview
+        fields = ['id', 'buyer', 'rating', 'review']
 
 
 class ProductSizeSerializer(serializers.Serializer):
@@ -79,12 +96,13 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     images = ImageSerializer(many=True)
     sizes = ProductSizeSerializer(many=True)
+    reviews = ProductReviewSerializer(many=True)
 
     class Meta:
         model = Product
         fields = [
             'id', 'name', 'batch' ,'price', 'rating', 'desc', 
-            'sizes', 'images', 'is_available'
+            'sizes', 'images', 'is_available', 'reviews'
         ]
 
 
@@ -238,6 +256,7 @@ class BuyOrderCreateSerializer(OrderInitSerializer):
 
     def save(self, **kwargs):
         return super().save([], **kwargs)
+
 
 class OrderFinalizeSerializer(serializers.Serializer):
 

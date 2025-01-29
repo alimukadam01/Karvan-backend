@@ -10,6 +10,9 @@ class Buyer(models.Model):
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=256)
 
+    def __str__(self):
+        return f"{self.email}"
+
 
 class City(models.Model):
     name = models.CharField(max_length=256)
@@ -91,12 +94,12 @@ class ProductImage(models.Model):
 class ProductReview(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
     product = models.ForeignKey(Product, models.CASCADE, related_name="reviews")
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, models.CASCADE)
+    buyer = models.ForeignKey(Buyer, models.CASCADE)
     rating = models.FloatField(default=0)
     review = models.TextField()
 
     def __str__(self):
-        return f"{self.product.name}: {self.user.email}"
+        return f"{self.product.name}: {self.buyer.email}"
 
 
 class Cart(models.Model):

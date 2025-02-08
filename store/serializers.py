@@ -6,6 +6,12 @@ from .models import (
     Order, OrderItem, Payment, ProductReview,
 )
 
+class EmailUserSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    email = serializers.EmailField()
+    message = serializers.CharField()
+
+
 class ImageSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     date_created = serializers.DateTimeField()
@@ -66,7 +72,7 @@ class BatchSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Batch
-        fields = ['id', 'title', 'desc', 'images']
+        fields = ['id', 'batch_no', 'title', 'desc', 'images']
 
 
 class ProductReviewSerializer(serializers.ModelSerializer):
@@ -268,7 +274,7 @@ class OrderFinalizeSerializer(serializers.Serializer):
     address = serializers.CharField(max_length=256)
     apt_suite = serializers.CharField(max_length=256)
     city_id = serializers.IntegerField()
-    alt_phone = serializers.CharField(max_length=256)
+    alt_phone = serializers.CharField(max_length=256, required=False, allow_blank=True)
     postal_code = serializers.CharField(max_length=256)
     notes = serializers.CharField(required=False, allow_blank=True)
 

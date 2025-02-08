@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.core.mail import send_mail
 from rest_framework.viewsets import ReadOnlyModelViewSet, GenericViewSet, ModelViewSet
 from rest_framework.mixins import (
     ListModelMixin,
@@ -8,7 +10,7 @@ from rest_framework.mixins import (
 )
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from rest_framework.permissions import IsAdminUser
 
 from .serializers import (
@@ -18,6 +20,7 @@ from .serializers import (
     CartItemSerializer, CartItemUpdateSerializer,
     CartOrderCreateSerializer, CartSerializer,
     CitySerializer,
+    EmailUserSerializer,
     FetchBuyerSerializer,
     OrderFinalizeSerializer,
     OrderInitSerializer,
@@ -27,6 +30,41 @@ from .serializers import (
 from .models import Batch, Buyer, Cart, CartItem, City, Order, Product
 
 # Create your views here.
+
+@api_view(['POST'])
+def email_user(request):
+
+    serializer = EmailUserSerializer(data=request.data)
+
+    try:
+        if serializer.is_valid(raise_exception=True):
+
+            message = f"Feedback from: {serializer.validated_data['name']} @ {serializer.validated_data['email']}\nMessage: {serializer.validated_data['message']}" 
+
+            send_mail(
+                subject="Feedback Form Response",
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=["admin@shopkarvan.pk"],
+                fail_silently=False
+            )
+
+            return Response({
+                "detail": "OK"
+            }, status=status.HTTP_200_OK)
+        
+        return Response({
+            "detail": "Bad Request."
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    except Exception as error:
+        print(error)
+        return Response({
+            "detail": "Internal Server Error."
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
 
 class BatchViewSet(ReadOnlyModelViewSet):
     queryset = Batch.objects.all()
@@ -240,3 +278,5 @@ class OrderViewSet(
             return Response({
                 "detail": "Internal Server Error"
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+

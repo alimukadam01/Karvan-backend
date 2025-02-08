@@ -33,6 +33,7 @@ class Address(models.Model):
 
 class Batch(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
+    batch_no = models.CharField(max_length=10, null=True, blank=True)
     title = models.CharField(max_length=256)
     desc = models.TextField(null=True, blank=True)
 

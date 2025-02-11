@@ -17,6 +17,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='productsize',
             name='size',
-            field=models.CharField(choices=[('X-Small', 'XS'), ('Small', 'S'), ('Medium', 'M'), ('Large', 'L'), ('X-Large', 'XL'), ('XX-Large', 'XXL')], default=('X-Small', 'XS'), max_length=10),
+            field=models.CharField(choices=[('X-Small', 'XS'), ('Small', 'S'), ('Medium', 'M'), ('Large', 'L'), ('X-Large', 'XL'), ('XX-Large', 'XXL')], default='X-Small', max_length=10),
         ),
     ]

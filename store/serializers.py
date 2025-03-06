@@ -1,3 +1,6 @@
+from django.core.mail import send_mail
+from django.conf import settings  
+from datetime import datetime, timezone, timedelta
 from rest_framework import serializers
 from .models import (
     Batch, Product,
@@ -325,5 +328,38 @@ class OrderFinalizeSerializer(serializers.Serializer):
             order.notes = self.validated_data["notes"]
         order.payment.save()
         order.save()
+
+        order_items = order.items.all()
+        num_items = 0
+
+        for item in order_items:
+            num_items += item.quantity
+
+        send_mail(
+            'Your Order with Karvan Has Been Finalized!',
+            f"""
+            Dear {buyer_data['first_name']},
+
+            We’re excited to let you know that your order #{order.id} has been successfully finalized! 🚀
+
+            Order Details:
+            Order Number: {order.id}
+            Items Ordered: {num_items}
+            Total Amount: PKR {order.payment.amount + address_data['city'].shipping_charges}
+            Payment Method: Cash On Delivery
+            Estimated Delivery: {(datetime.now(timezone(timedelta(hours=5))).date() + timedelta(days=5)).strftime("%d-%m-%Y")}
+            You’ll receive another email with tracking details once your order is shipped. 
+            If you have any questions or need assistance, feel free to reach out to us at support@karvan.pk.
+
+            Thank you for choosing Karvan! We appreciate your support. 💙
+
+            Best regards,
+            The Karvan Team
+            shopkarvan.pk
+            """,
+            settings.ORDER_CONFIRM_EMAIL,
+            [buyer_data['email']],
+            True
+        )
 
         return order

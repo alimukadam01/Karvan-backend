@@ -63,9 +63,6 @@ def email_user(request):
             "detail": "Internal Server Error."
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-
-
 class BatchViewSet(ReadOnlyModelViewSet):
     queryset = Batch.objects.all()
     serializer_class = BatchSerializer

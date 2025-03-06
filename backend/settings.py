@@ -27,9 +27,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ['SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '15.207.54.182', 'backend.shopkarvan.pk']
 
 
 # Application definition
@@ -91,11 +91,11 @@ INTERNAL_IPS = [
 DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',  
-            'NAME': 'postgres',  
-            'USER': 'postgres',  
-            'PASSWORD': 'BrTKXV9UMBCTQ6yVrudk',  
-            'HOST': 'karvan-db.cdyisqs4ulkx.ap-south-1.rds.amazonaws.com',  
-            'PORT': '5432',  
+            'NAME': os.environ['RDS_DB_NAME'],  
+            'USER': os.environ['RDS_DB_USER'],  
+            'PASSWORD': os.environ['RDS_DB_PASSWORD'],  
+            'HOST': os.environ['RDS_DB_HOST'],  
+            'PORT': os.environ['RDS_DB_PORT'],  
         }
     }
 

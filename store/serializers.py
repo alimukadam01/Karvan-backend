@@ -18,7 +18,10 @@ class EmailUserSerializer(serializers.Serializer):
 class ImageSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     date_created = serializers.DateTimeField()
-    image = serializers.ImageField()
+    image = serializers.SerializerMethodField()
+
+    def get_image(self, obj):
+        return f"http://127.0.0.1:8000{obj.image.url}" 
 
 
 class CitySerializer(serializers.ModelSerializer):

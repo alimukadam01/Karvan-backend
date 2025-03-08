@@ -179,7 +179,6 @@ class ProductViewSet(ReadOnlyModelViewSet):
         return Response(serializer.data, status = status.HTTP_200_OK)
 
 
-
 class CartViewSet(ModelViewSet):
     queryset = Cart.objects.all()
 

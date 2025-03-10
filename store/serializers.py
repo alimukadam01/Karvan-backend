@@ -135,12 +135,24 @@ class CartItemSerializer(serializers.ModelSerializer):
     product = SimpleProductSerializer(read_only=True)
 
     def save(self, **kwargs):
-        return  CartItem.objects.create(
-                    cart_id=self.validated_data['id'],
-                    product_id = self.context['product_id'],
-                    quantity = self.validated_data['quantity'],
-                    size = self.validated_data['size']
-                )
+        try:
+            cart_item = CartItem.objects.get(
+                cart_id = self.validated_data['id'], 
+                product_id = self.context['product_id'], 
+                size = self.validated_data['size']
+            )
+            cart_item.quantity += self.validated_data['quantity']
+            cart_item.save()
+            return cart_item
+          
+        except CartItem.DoesNotExist:
+
+            return CartItem.objects.create(
+                cart_id=self.validated_data['id'],
+                product_id = self.context['product_id'],
+                quantity = self.validated_data['quantity'],
+                size = self.validated_data['size']
+            )
 
     class Meta:
         model = CartItem

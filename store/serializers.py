@@ -1,6 +1,7 @@
-from django.core.mail import send_mail
-from django.conf import settings  
 from datetime import datetime, timezone, timedelta
+from django.core.mail import send_mail
+from django.conf import settings
+from django.db.transaction import atomic
 from rest_framework import serializers
 from .models import (
     Batch, Product,
@@ -221,7 +222,7 @@ class OrderSerializer(serializers.ModelSerializer):
 class OrderInitSerializer(serializers.Serializer):
 
     def save(self, cart_items, **kwargs):
-        order = Order.objects.create(status='N')
+        order = Order(status='N')
 
         order_items = []
         if cart_items:
@@ -233,10 +234,9 @@ class OrderInitSerializer(serializers.Serializer):
                     size = item.size
                 )
             for item in cart_items]
-            OrderItem.objects.bulk_create(order_items)
 
         else:
-            order_items.append(OrderItem.objects.create(
+            order_items.append(OrderItem(
                 order_id = order.id,
                 product_id = self.context["product_id"],
                 quantity = self.validated_data["quantity"],
@@ -248,14 +248,20 @@ class OrderInitSerializer(serializers.Serializer):
         for item in order_items:
             amount+=(item.product.price*item.quantity)
 
-        payment = Payment.objects.create(
+        payment = Payment(
             amount = amount,
             status = "P"
         )
 
-        order.payment = payment
-        order.status = "N"
-        order.save()
+        try:
+            with atomic():
+                payment.save()
+                order.payment = payment
+                order.save()
+                OrderItem.objects.bulk_create(order_items)
+                
+        except Exception as error:
+            print(error)
 
         return order
 
@@ -333,18 +339,25 @@ class OrderFinalizeSerializer(serializers.Serializer):
         address.city = address_data["city"]
         address.phone = address_data["phone"]
         address.postal_code = address_data["postal_code"]
-        address.save()
 
         order = Order.objects.get(id = self.context["order_id"])
         order.buyer = buyer
-        order.status = "OK"
         order.address = address
+        order.payment.shipping_charges =  address_data['city'].shipping_charges
         order.payment.status = "S"
         if self.validated_data.get("notes"):
             order.notes = self.validated_data["notes"]
-        order.payment.save()
-        order.save()
+        
+        order.status = "OK"
 
+        try:
+            with atomic(): 
+                address.save()
+                order.payment.save()
+                order.save()
+        except Exception as error:
+            print("Error saving order details: ", error)
+  
         order_items = order.items.all()
         num_items = 0
 
@@ -356,7 +369,7 @@ class OrderFinalizeSerializer(serializers.Serializer):
             f"""
             Dear {buyer_data['first_name']},
 
-            We’re excited to let you know that your order #{order.id} has been successfully finalized! 🚀
+            We're excited to let you know that your order #{order.id} has been successfully finalized! 🚀
 
             Order Details:
             Order Number: {order.id}
@@ -364,7 +377,7 @@ class OrderFinalizeSerializer(serializers.Serializer):
             Total Amount: PKR {order.payment.amount + address_data['city'].shipping_charges}
             Payment Method: Cash On Delivery
             Estimated Delivery: {(datetime.now(timezone(timedelta(hours=5))).date() + timedelta(days=5)).strftime("%d-%m-%Y")}
-            You’ll receive another email with tracking details once your order is shipped. 
+            You'll receive another email with tracking details once your order is shipped. 
             If you have any questions or need assistance, feel free to reach out to us at support@karvan.pk.
 
             Thank you for choosing Karvan! We appreciate your support. 💙

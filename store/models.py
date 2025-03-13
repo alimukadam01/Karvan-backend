@@ -117,26 +117,27 @@ class CartItem(models.Model):
 class Payment(models.Model):
 
     PAYMENT_STATUSES = [
-        ("PENDING", "P"),
-        ("SUCCESS", "S"),
-        ("DENIED", "D"),
-        ("CANCELLED", "C")
+        ("P", "PENDING"),
+        ("S", "SUCCESS"),
+        ("D", "DENIED"),
+        ("C", "CANCELLED")
     ]
 
     date_created = models.DateTimeField(auto_now_add=True)
-    amount = models.IntegerField()
+    amount = models.FloatField()
+    shipping_charges = models.FloatField(null=True, blank=True)
     status = models.CharField(max_length=256, choices=PAYMENT_STATUSES, default=PAYMENT_STATUSES[0])
 
 
 class Order(models.Model):
 
     ORDER_STATUSES = [
-        ("NEW_ORDER", "N"),
-        ("CONFIRMED", "OK"),
-        ("DISPATCHED", "D"),
-        ("ON_HOLD", "H"),
-        ("COMPLETED", "C"),
-        ("CANCELLED", "X")
+        ("N", "NEW_ORDER"),
+        ("OK", "CONFIRMED"),
+        ("D", "DISPATCHED"),
+        ("H", "ON_HOLD"),
+        ("C", "COMPLETED"),
+        ("X", "CANCELLED")
     ]
 
     id = models.CharField(max_length=256, default=uuid4, primary_key=True)

@@ -4,7 +4,6 @@ from rest_framework.viewsets import ReadOnlyModelViewSet, GenericViewSet, ModelV
 from rest_framework.mixins import (
     ListModelMixin,
     RetrieveModelMixin,
-    CreateModelMixin,
     UpdateModelMixin,
     DestroyModelMixin
 )
@@ -13,6 +12,7 @@ from rest_framework import status
 from rest_framework.decorators import action, api_view
 from rest_framework.permissions import IsAdminUser
 
+from .models import Batch, Buyer, Cart, CartItem, City, Order, Product
 from .serializers import (
     BatchSerializer,
     BuyOrderCreateSerializer,
@@ -23,11 +23,10 @@ from .serializers import (
     EmailUserSerializer,
     FetchBuyerSerializer,
     OrderFinalizeSerializer,
-    OrderInitSerializer,
     OrderSerializer,
-    ProductDetailSerializer, ProductListSerializer
+    ProductDetailSerializer, ProductListSerializer,
+    ProductReviewCreateSerializer,
 )
-from .models import Batch, Buyer, Cart, CartItem, City, Order, Product
 
 # Create your views here.
 
@@ -252,7 +251,11 @@ class OrderViewSet(
     def get_serializer_class(self):
 
         if self.request.method in ('POST'):
+            if self.action == 'review':
+                return ProductReviewCreateSerializer
+            
             return OrderFinalizeSerializer
+        
         return OrderSerializer
 
 
@@ -276,4 +279,39 @@ class OrderViewSet(
                 "detail": "Internal Server Error"
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
+    @action(methods=['POST'], detail=True)
+    def review(self, request, pk=None):
+        
+        try:
+            order = Order.objects.get(id=self.kwargs['pk'])
+            print(order.is_reviewed)
+            
+            if order.is_reviewed: return Response({
+                "detail": "Forbidden"
+            }, status= status.HTTP_403_FORBIDDEN)
+            
+            serializer = ProductReviewCreateSerializer(data=request.data, context={
+                "order": order
+            })
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                return Response({
+                    "detail": "OK"
+                }, status=status.HTTP_200_OK)
+            
+            return Response({
+                "detail": "Bad Request"
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        except Order.DoesNotExist:
+            print("Order does not exist.")
+            return Response({
+                "detail": "Not Found"
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        except Exception as error:
+            print(f"Error in adding review: {error}")
+            return Response({
+                "detail": "Internal Server Error"
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        

@@ -91,6 +91,31 @@ class ProductReviewSerializer(serializers.ModelSerializer):
         fields = ['id', 'buyer', 'rating', 'review']
 
 
+class ProductReviewCreateSerializer(serializers.Serializer):
+    reviews = serializers.ListField()
+
+    def save(self, **kwargs):
+        
+        data = self.validated_data['reviews']
+        order = self.context['order']
+        buyer_id = order.buyer.id
+        
+        if data:
+            reviews = [ProductReview(
+                product_id = review["product_id"],
+                buyer_id = buyer_id,
+                rating = review["rating"],
+                review = review["review"]
+            ) for review in data]
+
+            ProductReview.objects.bulk_create(reviews)
+            order.is_reviewed = True
+            order.save()
+            return reviews
+        
+        return []
+
+
 class ProductSizeSerializer(serializers.Serializer):
     size = serializers.CharField()
 
@@ -215,7 +240,7 @@ class OrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = [
             'id', 'buyer', 'created_at', 'status',
-            'payment', 'items', 'address', 'notes'
+            'payment', 'items', 'address', 'notes', 'is_reviewed'
         ]
 
 

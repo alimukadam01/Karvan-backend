@@ -9,7 +9,6 @@ def send_admin_email_on_order_confirmation(sender, **kwargs):
     order = kwargs['instance']
     
     if not kwargs['created'] and order and not order._state.adding:
-        print(kwargs)
         if order.status == "OK":
             message =  f"""
                 Dear Karvan Team,
@@ -55,3 +54,36 @@ def send_admin_email_on_order_confirmation(sender, **kwargs):
             )
     
     return
+
+@receiver(post_save, sender=Order)
+def send_review_email_upon_order_delivery(sender, **kwargs):
+
+    order = kwargs["instance"]
+
+    if not kwargs['created'] and order and not order._state.adding and not order.is_reviewed:
+        if order.status == "C":
+            send_mail(
+                "Your Order's Here! Now, Tell Us What You Think 👀",
+                f"""
+                Hey {order.buyer.first_name},
+
+                Hope you're loving your new Karvan goodies! We'd love to hear your thoughts — your feedback helps us improve and also guides fellow shoppers.
+                Hit the link below and drop a quick review:
+
+                "http://localhost:3000/review/{order.id}/"
+
+                Takes just a sec, and who knows? It might get you some exclusive perks in the future. 😉
+
+                Thanks for being part of the Karvan fam! 💜
+
+                Cheers,
+                The Karvan Team
+                support@shopkarvan.pk
+                shopkarvan.pk
+                """,
+                settings.ORDER_CONFIRM_EMAIL,
+                [order.buyer.email],
+                True
+            )
+
+            return

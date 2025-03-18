@@ -160,6 +160,7 @@ class Order(models.Model):
         related_name='orders', null=True, blank=True
     )
     notes = models.TextField(null=True, blank=True)
+    is_reviewed = models.BooleanField(default=False)
 
 
 class OrderItem(models.Model):

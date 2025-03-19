@@ -70,7 +70,7 @@ def send_review_email_upon_order_delivery(sender, **kwargs):
                 Hope you're loving your new Karvan goodies! We'd love to hear your thoughts — your feedback helps us improve and also guides fellow shoppers.
                 Hit the link below and drop a quick review:
 
-                "http://localhost:3000/review/{order.id}/"
+                "https://shopkkarvan.pk/review/{order.id}/"
 
                 Takes just a sec, and who knows? It might get you some exclusive perks in the future. 😉
 
